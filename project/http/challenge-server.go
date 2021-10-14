@@ -2,17 +2,12 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"log"
 )
 
-func runChallengeServer() {
+func RunChallengeServer(token string, data string) {
 	server := gin.Default()
-	server.GET("/", func(context *gin.Context) {
-		context.JSON(200, gin.H{
-			"message": "challenge",
-		})
-		log.Println("Received challenge")
-		// TODO: Handle challenge
+	server.GET("/.well-known/acme-challenge/"+token, func(context *gin.Context) {
+		context.Data(200, "application/octet-stream", []byte(data))
 	})
 	err := server.Run(":5002")
 	if err != nil {
