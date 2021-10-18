@@ -22,11 +22,9 @@ type HttpChallengeCommand struct {
 	Revoke  bool     `long:"revoke"`
 }
 
-func (c *HttpChallengeCommand) Execute(args []string) error {
-	log.Println(args)
+func (c *HttpChallengeCommand) Execute([]string) error {
 	return RunHttpChallenge(*c)
 }
-
 
 func RunDnsChallenge(cmd DnsChallengeCommand) error {
 	log.Println("Performing DNS challenge", cmd)
