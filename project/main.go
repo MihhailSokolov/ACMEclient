@@ -3,47 +3,24 @@ package main
 import (
 	"github.com/jessevdk/go-flags"
 	"log"
+	"project/command"
 )
-
-type DnsChallengeCommand struct {
-	Dir     string   `long:"dir" required:"true"`
-	Record  string   `long:"record" required:"true"`
-	Domains []string `long:"domain" required:"true"`
-	Revoke  bool     `long:"revoke"`
-}
-
-func (c *DnsChallengeCommand) Execute(args []string) error {
-	log.Println("Performing DNS challenge", c)
-	return nil
-}
-
-type HttpChallengeCommand struct {
-	Dir     string   `long:"dir" required:"true"`
-	Record  string   `long:"record" required:"true"`
-	Domains []string `long:"domain" required:"true"`
-	Revoke  bool     `long:"revoke"`
-}
-
-func (c *HttpChallengeCommand) Execute(args []string) error {
-	log.Println("Performing HTTP challenge", c)
-	return nil
-}
 
 func addCommands(parser *flags.Parser) error {
 	_, err := parser.AddCommand(
 		"dns01",
-		"short help",
-		"long help",
-		&DnsChallengeCommand{},
+		"ACME DNS challenge",
+		"Obtain (or revoke) HTTPS certificate using ACME DNS challenge",
+		&command.DnsChallengeCommand{},
 	)
 	if err != nil {
 		return err
 	}
 	_, err = parser.AddCommand(
 		"http01",
-		"short help",
-		"long help",
-		&HttpChallengeCommand{},
+		"ACME HTTP challenge",
+		"Obtain (or revoke) HTTPS certificate using ACME HTTP challenge",
+		&command.HttpChallengeCommand{},
 	)
 	if err != nil {
 		return err
