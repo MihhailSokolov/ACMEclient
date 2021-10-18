@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/jessevdk/go-flags"
 	"log"
-	"project/command"
+	"project/client"
 )
 
 func addCommands(parser *flags.Parser) error {
@@ -11,7 +11,7 @@ func addCommands(parser *flags.Parser) error {
 		"dns01",
 		"ACME DNS challenge",
 		"Obtain (or revoke) HTTPS certificate using ACME DNS challenge",
-		&command.DnsChallengeCommand{},
+		&client.DnsChallengeCommand{},
 	)
 	if err != nil {
 		return err
@@ -20,7 +20,7 @@ func addCommands(parser *flags.Parser) error {
 		"http01",
 		"ACME HTTP challenge",
 		"Obtain (or revoke) HTTPS certificate using ACME HTTP challenge",
-		&command.HttpChallengeCommand{},
+		&client.HttpChallengeCommand{},
 	)
 	if err != nil {
 		return err
