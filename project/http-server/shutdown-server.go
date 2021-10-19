@@ -1,8 +1,9 @@
-package http
+package http_server
 
 import (
 	"github.com/gin-gonic/gin"
 	"log"
+	"os"
 )
 
 func runShutdownServer() {
@@ -11,8 +12,8 @@ func runShutdownServer() {
 		context.JSON(200, gin.H{
 			"message": "shutting down...",
 		})
-		log.Println("Received shutdown signal")
-		// TODO: Shutdown all services
+		log.Println("Received shutdown signal, exiting...")
+		os.Exit(0)
 	})
 	err := server.Run(":5003")
 	if err != nil {
