@@ -16,8 +16,10 @@ func runShutdownServer() {
 		log.Println("Received shutdown signal, exiting...")
 		os.Exit(0)
 	})
-	err := http.ListenAndServe(":5003", server)
-	if err != nil {
-		panic(err)
-	}
+	go func() {
+		err := http.ListenAndServe(":5003", server)
+		if err != nil {
+			panic(err)
+		}
+	}()
 }
