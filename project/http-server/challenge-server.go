@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func RunChallengeServer(token string, data string) {
@@ -9,7 +10,7 @@ func RunChallengeServer(token string, data string) {
 	server.GET("/.well-known/acme-challenge/"+token, func(context *gin.Context) {
 		context.Data(200, "application/octet-stream", []byte(data))
 	})
-	err := server.Run(":5002")
+	err := http.ListenAndServe(":5002", server)
 	if err != nil {
 		panic(err)
 	}

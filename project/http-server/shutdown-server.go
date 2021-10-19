@@ -3,6 +3,7 @@ package http_server
 import (
 	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -15,7 +16,7 @@ func runShutdownServer() {
 		log.Println("Received shutdown signal, exiting...")
 		os.Exit(0)
 	})
-	err := server.Run(":5003")
+	err := http.ListenAndServe(":5003", server)
 	if err != nil {
 		panic(err)
 	}
