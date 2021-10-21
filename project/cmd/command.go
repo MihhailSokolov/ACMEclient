@@ -1,10 +1,7 @@
-package client
+package cmd
 
 import (
-	"io/ioutil"
 	"log"
-	"net/http"
-	"project/http-server"
 )
 
 type DnsChallengeCommand struct {
@@ -36,17 +33,5 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 
 func RunHttpChallenge(cmd HttpChallengeCommand) error {
 	log.Println("Performing HTTP challenge", cmd)
-	http_server.RunChallengeServer("hello", "test")
-	log.Println("Started HTTP server, sending request")
-	resp, err := http.Get("http://localhost:5002/.well-known/acme-challenge/hello")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Println("Response:")
-	log.Println(string(body))
 	return nil
 }
