@@ -315,6 +315,7 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 			panic(err)
 		}
 	}(response.Body)
+	log.Println(response)
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, nil, "", "", err
@@ -327,6 +328,5 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 	if err != nil {
 		return nil, nil, "", "", err
 	}
-	log.Println(orderResponse)
 	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
 }
