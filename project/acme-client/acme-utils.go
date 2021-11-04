@@ -88,7 +88,7 @@ func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir Acme
 
 func RevokeCertificate(keyId, nonce string, client http.Client, acmeDir AcmeDirectory, key ecdsa.PrivateKey) error {
 	header := CreateHeader(keyId, nonce, acmeDir.RevokeCert)
-	certificate, err := ioutil.ReadFile("../server.cert")
+	certificate, err := ioutil.ReadFile("server.cert")
 	if err != nil {
 		return err
 	}
@@ -147,11 +147,11 @@ func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client
 	if err != nil {
 		return "", err
 	}
-	err = ioutil.WriteFile("../server.cert", body, os.FileMode(0644))
+	err = ioutil.WriteFile("server.cert", body, os.FileMode(0644))
 	if err != nil {
 		return "", err
 	}
-	err = ioutil.WriteFile("../server.key", pem.EncodeToMemory(
+	err = ioutil.WriteFile("server.key", pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
 			Bytes: x509.MarshalPKCS1PrivateKey(&rsaKey),

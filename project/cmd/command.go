@@ -82,7 +82,7 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		}
 	}
 	time.Sleep(time.Millisecond * 100)
-	go https.RunCertificateServer("../server.cert", "../server.key")
+	go https.RunCertificateServer("server.cert", "server.key")
 	return nil
 }
 
@@ -124,12 +124,12 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 		}
 	}
 	time.Sleep(time.Millisecond * 100)
-	go https.RunCertificateServer("../server.cert", "../server.key")
+	go https.RunCertificateServer("server.cert", "server.key")
 	return nil
 }
 
 func initialization() (http.Client, ecdsa.PrivateKey, error) {
-	pebbleCertificate, err := ioutil.ReadFile("../pebble.minica.pem")
+	pebbleCertificate, err := ioutil.ReadFile("pebble.minica.pem")
 	if err != nil {
 		panic(err)
 	}
