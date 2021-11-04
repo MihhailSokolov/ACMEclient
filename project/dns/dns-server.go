@@ -13,7 +13,7 @@ type dnsData struct {
 
 var dnsLookup = map[string]dnsData{}
 
-func addDnsRecord(domain string, ip string, txt string) {
+func AddDnsRecord(domain string, ip string, txt string) {
 	dnsLookup[domain] = dnsData{
 		ip:  ip,
 		txt: txt,
@@ -53,7 +53,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func runDnsServer() {
+func RunDnsServer() {
 	server := &dns.Server{Addr: ":10053", Net: "udp"}
 	server.Handler = &handler{}
 	go func() {
