@@ -182,7 +182,7 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 		&x509.CertificateRequest{
 			SignatureAlgorithm: x509.SHA256WithRSA,
 			Subject: pkix.Name{
-				CommonName:         dnsIdentifiers[0].Value,
+				CommonName:         dnsNames[0],
 				Country:            []string{"CH"},
 				Province:           []string{"Zurich Canton"},
 				Locality:           []string{"Zurich"},
