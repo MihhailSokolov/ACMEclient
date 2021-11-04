@@ -27,6 +27,10 @@ type NewAccountHeader struct {
 	Url   string `json:"url"`
 }
 
+type NewAccountPayload struct {
+	TermsOfServiceAgreed bool `json:"termsOfServiceAgreed"`
+}
+
 type AcmeDirectory struct {
 	NewNonce   string
 	NewAccount string

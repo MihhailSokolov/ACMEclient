@@ -66,7 +66,11 @@ func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir Acme
 		return "", err
 	}
 	header := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(headerData)
-	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
+	payloadData, err := json.Marshal(NewAccountPayload{TermsOfServiceAgreed: true})
+	if err != nil {
+		return "", nil
+	}
+	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(payloadData)
 	signature := SignMessage(header+"."+payload, key)
 	request, err := json.Marshal(JWSMessage{
 		Protected: header,
