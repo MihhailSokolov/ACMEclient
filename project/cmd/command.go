@@ -66,23 +66,32 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		return err
 	}
 	keyId, err := acme.CreateNewAcmeAccount(httpClient, privateKey, acmeDirectory)
-	log.Println("Created ACME account")
 	if err != nil {
 		return err
 	}
+	log.Println("Created ACME account")
 	nonce := resp.Header.Get("Replay-Nonce")
 	authorizationUrls, dnsIdentifiers, finalizeUrl, nonce, err := acme.OrderCertificates(keyId, nonce, acmeDirectory, privateKey, httpClient, cmd.Domains)
-	log.Println("Ordered certificates")
-	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record)
-	log.Println("Authorized with DNS")
-	certificateUrl, rsaPrivateKey, err := acme.SendCSR(keyId, nonce, finalizeUrl, dnsIdentifiers, privateKey, httpClient)
-	log.Println("Sent CSR")
 	if err != nil {
 		return err
 	}
+	log.Println("Ordered certificates")
+	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record)
+	if err != nil {
+		return err
+	}
+	log.Println("Authorized with DNS")
+	certificateUrl, rsaPrivateKey, err := acme.SendCSR(keyId, nonce, finalizeUrl, dnsIdentifiers, privateKey, httpClient)
+	if err != nil {
+		return err
+	}
+	log.Println("Sent CSR")
 	nonce = resp.Header.Get("Replay-Nonce")
 	time.Sleep(time.Millisecond * 100)
 	nonce, err = acme.DownloadCertificate(certificateUrl, keyId, nonce, httpClient, privateKey, rsaPrivateKey)
+	if err != nil {
+		return err
+	}
 	log.Println("Downloaded certificate")
 	if cmd.Revoke {
 		err = acme.RevokeCertificate(keyId, nonce, httpClient, acmeDirectory, privateKey)
@@ -117,23 +126,32 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 		return err
 	}
 	keyId, err := acme.CreateNewAcmeAccount(httpClient, privateKey, acmeDirectory)
-	log.Println("Created an ACME account")
 	if err != nil {
 		return err
 	}
+	log.Println("Created an ACME account")
 	nonce := resp.Header.Get("Replay-Nonce")
 	authorizationUrls, dnsIdentifiers, finalizeUrl, nonce, err := acme.OrderCertificates(keyId, nonce, acmeDirectory, privateKey, httpClient, cmd.Domains)
-	log.Println("Ordered certificates")
-	nonce, err = authorizeWithHttp(keyId, nonce, privateKey, httpClient, authorizationUrls)
-	log.Println("Authorized with HTTP")
-	certificateUrl, rsaPrivateKey, err := acme.SendCSR(keyId, nonce, finalizeUrl, dnsIdentifiers, privateKey, httpClient)
-	log.Println("Sent CSR")
 	if err != nil {
 		return err
 	}
+	log.Println("Ordered certificates")
+	nonce, err = authorizeWithHttp(keyId, nonce, privateKey, httpClient, authorizationUrls)
+	if err != nil {
+		return err
+	}
+	log.Println("Authorized with HTTP")
+	certificateUrl, rsaPrivateKey, err := acme.SendCSR(keyId, nonce, finalizeUrl, dnsIdentifiers, privateKey, httpClient)
+	if err != nil {
+		return err
+	}
+	log.Println("Sent CSR")
 	nonce = resp.Header.Get("Replay-Nonce")
 	time.Sleep(time.Millisecond * 100)
 	nonce, err = acme.DownloadCertificate(certificateUrl, keyId, nonce, httpClient, privateKey, rsaPrivateKey)
+	if err != nil {
+		return err
+	}
 	log.Println("Downloaded certificate")
 	if cmd.Revoke {
 		err = acme.RevokeCertificate(keyId, nonce, httpClient, acmeDirectory, privateKey)
