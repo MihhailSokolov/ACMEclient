@@ -12,9 +12,9 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -327,6 +327,6 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 	if err != nil {
 		return nil, nil, "", "", err
 	}
-	fmt.Println(orderResponse)
+	log.Println(orderResponse)
 	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
 }
