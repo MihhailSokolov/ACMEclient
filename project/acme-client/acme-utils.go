@@ -11,7 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -85,7 +85,7 @@ func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir Acme
 		return "", err
 	}
 	if response.StatusCode != 201 {
-		return "", fmt.Errorf("account creation error")
+		return "", errors.New("account creation error")
 	}
 	return response.Header.Get("Location"), nil
 }
@@ -118,7 +118,7 @@ func RevokeCertificate(keyId, nonce string, client http.Client, acmeDir AcmeDire
 		return err
 	}
 	if response.StatusCode != 200 {
-		return fmt.Errorf("revocation error")
+		return errors.New("revocation error")
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client
 		}
 	}(response.Body)
 	if response.StatusCode != 200 {
-		return "", fmt.Errorf("certificate downloading error")
+		return "", errors.New("certificate downloading error")
 	}
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -224,7 +224,7 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 		}
 	}(response.Body)
 	if response.StatusCode != 200 {
-		return "", rsa.PrivateKey{}, fmt.Errorf("csr error")
+		return "", rsa.PrivateKey{}, errors.New("csr error")
 	}
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -267,7 +267,7 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 			return "", rsa.PrivateKey{}, err
 		}
 		if response.StatusCode != 200 {
-			return "", rsa.PrivateKey{}, fmt.Errorf("csr confirmation error")
+			return "", rsa.PrivateKey{}, errors.New("csr confirmation error")
 		}
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
@@ -287,14 +287,14 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 	for _, identifier := range domains {
 		dnsIdentifiers = append(dnsIdentifiers, Identifier{Type: "dns", Value: identifier})
 	}
-	soBytes, err := json.Marshal(CertificateOrder{
+	payloadData, err := json.Marshal(CertificateOrder{
 		Status:      "pending",
 		Identifiers: dnsIdentifiers,
 	})
 	if err != nil {
 		return nil, nil, "", "", err
 	}
-	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(soBytes)
+	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(payloadData)
 	signature := SignMessage(header+"."+payload, key)
 	request, err := json.Marshal(JWSMessage{
 		Protected: header,
@@ -319,12 +319,13 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 		return nil, nil, "", "", err
 	}
 	if response.StatusCode != 201 {
-		return nil, nil, "", "", fmt.Errorf("order was not successful")
+		return nil, nil, "", "", errors.New("order was not successful")
 	}
 	var orderResponse CertificateOrderResponse
 	err = json.Unmarshal(body, &orderResponse)
 	if err != nil {
 		return nil, nil, "", "", err
 	}
+	print(orderResponse)
 	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
 }
