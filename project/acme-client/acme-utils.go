@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -326,6 +327,6 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 	if err != nil {
 		return nil, nil, "", "", err
 	}
-	print(orderResponse)
+	fmt.Println(orderResponse)
 	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
 }
