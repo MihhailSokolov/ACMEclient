@@ -14,7 +14,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -125,12 +124,10 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 			panic(err)
 		}
 	}(response.Body)
-	log.Println(response) // TODO: Remove
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, nil, "", "", err
 	}
-	log.Println(string(body)) // TODO: Remove
 	if response.StatusCode != 201 {
 		return nil, nil, "", "", errors.New("order was not successful")
 	}
