@@ -55,7 +55,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func RunDnsServer() {
-	server := &dns.Server{Addr: ":10053", Net: "udp"}
+	server := &dns.Server{Addr: "0.0.0.0:10053", Net: "udp"}
 	server.Handler = &handler{}
 	go func() {
 		if err := server.ListenAndServe(); err != nil {
