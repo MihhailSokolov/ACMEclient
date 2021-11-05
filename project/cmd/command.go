@@ -227,7 +227,7 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		sha256 := crypto.SHA256.New()
 		sha256.Write(jwk)
 		digest := sha256.Sum(nil)
-		httpServer.RunChallengeServer(challenge.Token, challenge.Token+"."+base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest))
+		go httpServer.RunChallengeServer(challenge.Token, challenge.Token+"."+base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest))
 		header = acme.CreateHeader(accountURL, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
 		signature = acme.SignMessage(header+"."+payload, privateKey)

@@ -11,11 +11,9 @@ func RunChallengeServer(token string, data string) {
 	server.GET("/.well-known/acme-challenge/"+token, func(context *gin.Context) {
 		context.Data(200, "application/octet-stream", []byte(data))
 	})
-	go func() {
-		err := http.ListenAndServe(":5002", server)
-		if err != nil {
-			panic(err)
-		}
-		log.Println("Started HTTP server")
-	}()
+	err := http.ListenAndServe(":5002", server)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Started HTTP server")
 }
