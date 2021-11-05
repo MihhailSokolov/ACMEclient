@@ -244,16 +244,10 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		if err != nil {
 			return "", err
 		}
-		response, err = httpClient.Post(authorizationUrl, "application/jose+json", bytes.NewBuffer(request))
+		response, err = httpClient.Post(challenge.URL, "application/jose+json", bytes.NewBuffer(request))
 		if err != nil {
 			return "", err
 		}
-		log.Println(response)
-		body, err = ioutil.ReadAll(response.Body)
-		if err != nil {
-			return "", err
-		}
-		log.Println(string(body))
 		if response.StatusCode != 200 {
 			return "", errors.New("authorization request error")
 		}
@@ -358,16 +352,10 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		if err != nil {
 			return "", err
 		}
-		response, err = httpClient.Post(authorizationUrl, "application/jose+json", bytes.NewBuffer(request))
+		response, err = httpClient.Post(challenge.URL, "application/jose+json", bytes.NewBuffer(request))
 		if err != nil {
 			return "", err
 		}
-		log.Println(response)
-		body, err = ioutil.ReadAll(response.Body)
-		if err != nil {
-			return "", err
-		}
-		log.Println(string(body))
 		if response.StatusCode != 200 {
 			return "", errors.New("authentication request error")
 		}
