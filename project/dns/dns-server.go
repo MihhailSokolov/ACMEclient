@@ -46,6 +46,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 				Txt: []string{data.txt},
 			})
 		}
+		log.Println("DNS TXT request: Name=", domain, "; TXT=", data.txt)
 	}
 	err := w.WriteMsg(&msg)
 	if err != nil {
@@ -60,5 +61,6 @@ func RunDnsServer() {
 		if err := server.ListenAndServe(); err != nil {
 			log.Fatalf("Error starting DNS server: %s\n", err.Error())
 		}
+		log.Println("Started a DNS server")
 	}()
 }

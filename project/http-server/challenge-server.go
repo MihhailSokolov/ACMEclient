@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
@@ -15,5 +16,6 @@ func RunChallengeServer(token string, data string) {
 		if err != nil {
 			panic(err)
 		}
+		log.Println("Started HTTP server")
 	}()
 }
