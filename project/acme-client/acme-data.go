@@ -55,6 +55,7 @@ type CertificateOrderResponse struct {
 type CertificateOrder struct {
 	Status      string       `json:"status"`
 	Identifiers []Identifier `json:"identifiers"`
+	Expires     string       `json:"expires"`
 }
 
 type Challenge struct {

@@ -91,20 +91,21 @@ func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir Acme
 	return response.Header.Get("Location"), nil
 }
 
-func RevokeCertificate(keyId, nonce string, client http.Client, acmeDir AcmeDirectory, key ecdsa.PrivateKey) error {
-	header := CreateHeader(keyId, nonce, acmeDir.RevokeCert)
-	certificate, err := ioutil.ReadFile("server.cert")
-	if err != nil {
-		return err
+func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.PrivateKey, client http.Client, domains []string) ([]string, []Identifier, string, string, error) {
+	header := CreateHeader(keyId, nonce, acmeDir.NewOrder)
+	var dnsIdentifiers []Identifier
+	for _, identifier := range domains {
+		dnsIdentifiers = append(dnsIdentifiers, Identifier{Type: "dns", Value: identifier})
 	}
-	decodedCertificate, _ := pem.Decode(certificate)
-	revocation, err := json.Marshal(RevocationOrder{
-		Certificate: base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(decodedCertificate.Bytes),
+	payloadData, err := json.Marshal(CertificateOrder{
+		Status:      "pending",
+		Identifiers: dnsIdentifiers,
+		Expires:     "2022-11-05T12:00:00Z",
 	})
 	if err != nil {
-		return err
+		return nil, nil, "", "", err
 	}
-	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(revocation)
+	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(payloadData)
 	signature := SignMessage(header+"."+payload, key)
 	request, err := json.Marshal(JWSMessage{
 		Protected: header,
@@ -112,32 +113,11 @@ func RevokeCertificate(keyId, nonce string, client http.Client, acmeDir AcmeDire
 		Signature: signature,
 	})
 	if err != nil {
-		return err
+		return nil, nil, "", "", err
 	}
-	response, err := client.Post(acmeDir.RevokeCert, "application/jose+json", bytes.NewBuffer(request))
+	response, err := client.Post(acmeDir.NewOrder, "application/jose+json", bytes.NewBuffer(request))
 	if err != nil {
-		return err
-	}
-	if response.StatusCode != 200 {
-		return errors.New("revocation error")
-	}
-	return nil
-}
-
-func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client, key ecdsa.PrivateKey, rsaKey rsa.PrivateKey) (string, error) {
-	header := CreateHeader(keyId, nonce, certificateUrl)
-	signature := SignMessage(header+".", key)
-	request, err := json.Marshal(JWSMessage{
-		Protected: header,
-		Payload:   "",
-		Signature: signature,
-	})
-	if err != nil {
-		return "", err
-	}
-	response, err := client.Post(certificateUrl, "application/jose+json", bytes.NewBuffer(request))
-	if err != nil {
-		return "", err
+		return nil, nil, "", "", err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -145,28 +125,20 @@ func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client
 			panic(err)
 		}
 	}(response.Body)
-	if response.StatusCode != 200 {
-		return "", errors.New("certificate downloading error")
-	}
+	log.Println(response) // TODO: Remove
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", err
+		return nil, nil, "", "", err
 	}
-	err = ioutil.WriteFile("server.cert", body, os.FileMode(0644))
+	if response.StatusCode != 201 {
+		return nil, nil, "", "", errors.New("order was not successful")
+	}
+	var orderResponse CertificateOrderResponse
+	err = json.Unmarshal(body, &orderResponse)
 	if err != nil {
-		return "", err
+		return nil, nil, "", "", err
 	}
-	err = ioutil.WriteFile("server.key", pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(&rsaKey),
-		},
-	), os.FileMode(0644))
-	if err != nil {
-		return "", err
-	}
-	nonce = response.Header.Get("Replay-Nonce")
-	return nonce, nil
+	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
 }
 
 func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key ecdsa.PrivateKey, client http.Client) (string, rsa.PrivateKey, error) {
@@ -282,32 +254,20 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 	return certificateUrl, *rsaPrivateKey, nil
 }
 
-func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.PrivateKey, client http.Client, domains []string) ([]string, []Identifier, string, string, error) {
-	header := CreateHeader(keyId, nonce, acmeDir.NewOrder)
-	var dnsIdentifiers []Identifier
-	for _, identifier := range domains {
-		dnsIdentifiers = append(dnsIdentifiers, Identifier{Type: "dns", Value: identifier})
-	}
-	payloadData, err := json.Marshal(CertificateOrder{
-		Status:      "pending",
-		Identifiers: dnsIdentifiers,
-	})
-	if err != nil {
-		return nil, nil, "", "", err
-	}
-	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(payloadData)
-	signature := SignMessage(header+"."+payload, key)
+func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client, key ecdsa.PrivateKey, rsaKey rsa.PrivateKey) (string, error) {
+	header := CreateHeader(keyId, nonce, certificateUrl)
+	signature := SignMessage(header+".", key)
 	request, err := json.Marshal(JWSMessage{
 		Protected: header,
-		Payload:   payload,
+		Payload:   "",
 		Signature: signature,
 	})
 	if err != nil {
-		return nil, nil, "", "", err
+		return "", err
 	}
-	response, err := client.Post(acmeDir.NewOrder, "application/jose+json", bytes.NewBuffer(request))
+	response, err := client.Post(certificateUrl, "application/jose+json", bytes.NewBuffer(request))
 	if err != nil {
-		return nil, nil, "", "", err
+		return "", err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -315,18 +275,59 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 			panic(err)
 		}
 	}(response.Body)
-	log.Println(response)
+	if response.StatusCode != 200 {
+		return "", errors.New("certificate downloading error")
+	}
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, nil, "", "", err
+		return "", err
 	}
-	if response.StatusCode != 201 {
-		return nil, nil, "", "", errors.New("order was not successful")
-	}
-	var orderResponse CertificateOrderResponse
-	err = json.Unmarshal(body, &orderResponse)
+	err = ioutil.WriteFile("server.cert", body, os.FileMode(0644))
 	if err != nil {
-		return nil, nil, "", "", err
+		return "", err
 	}
-	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
+	err = ioutil.WriteFile("server.key", pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(&rsaKey),
+		},
+	), os.FileMode(0644))
+	if err != nil {
+		return "", err
+	}
+	nonce = response.Header.Get("Replay-Nonce")
+	return nonce, nil
+}
+
+func RevokeCertificate(keyId, nonce string, client http.Client, acmeDir AcmeDirectory, key ecdsa.PrivateKey) error {
+	header := CreateHeader(keyId, nonce, acmeDir.RevokeCert)
+	certificate, err := ioutil.ReadFile("server.cert")
+	if err != nil {
+		return err
+	}
+	decodedCertificate, _ := pem.Decode(certificate)
+	revocation, err := json.Marshal(RevocationOrder{
+		Certificate: base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(decodedCertificate.Bytes),
+	})
+	if err != nil {
+		return err
+	}
+	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(revocation)
+	signature := SignMessage(header+"."+payload, key)
+	request, err := json.Marshal(JWSMessage{
+		Protected: header,
+		Payload:   payload,
+		Signature: signature,
+	})
+	if err != nil {
+		return err
+	}
+	response, err := client.Post(acmeDir.RevokeCert, "application/jose+json", bytes.NewBuffer(request))
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != 200 {
+		return errors.New("revocation error")
+	}
+	return nil
 }
