@@ -85,7 +85,6 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		return err
 	}
 	log.Println("Sent CSR")
-	time.Sleep(time.Millisecond * 100)
 	nonce, err = acme.DownloadCertificate(certificateUrl, keyId, nonce, httpClient, privateKey, rsaPrivateKey)
 	if err != nil {
 		return err
@@ -98,7 +97,6 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		}
 		log.Println("Revoked certificate")
 	}
-	time.Sleep(time.Millisecond * 100)
 	go https.RunCertificateServer("server.cert", "server.key")
 	log.Println("Started HTTPS server")
 	return nil
@@ -143,7 +141,6 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 		return err
 	}
 	log.Println("Sent CSR")
-	time.Sleep(time.Millisecond * 100)
 	nonce, err = acme.DownloadCertificate(certificateUrl, keyId, nonce, httpClient, privateKey, rsaPrivateKey)
 	if err != nil {
 		return err
@@ -156,7 +153,6 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 		}
 		log.Println("Revoked certificate")
 	}
-	time.Sleep(time.Millisecond * 100)
 	go https.RunCertificateServer("server.cert", "server.key")
 	log.Println("Started HTTPS server")
 	return nil
@@ -232,7 +228,6 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		sha256.Write(jwk)
 		digest := sha256.Sum(nil)
 		httpServer.RunChallengeServer(challenge.Token, challenge.Token+"."+base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest))
-		time.Sleep(time.Millisecond * 100)
 		header = acme.CreateHeader(accountURL, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
 		signature = acme.SignMessage(header+"."+payload, privateKey)
@@ -252,6 +247,7 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 			return "", errors.New("authorization request error")
 		}
 		nonce = response.Header.Get("Replay-Nonce")
+		time.Sleep(time.Second)
 		header = acme.CreateHeader(accountURL, nonce, authorizationUrl)
 		signature = acme.SignMessage(header+".", privateKey)
 		request, err = json.Marshal(acme.JWSMessage{
@@ -342,7 +338,6 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		digest = sha256.Sum(nil)
 		encodedDigest = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest)
 		dnsServer.AddDnsRecord("_acme-challenge."+dnsIdentifiers[i].Value+".", record, encodedDigest)
-		time.Sleep(time.Millisecond * 100)
 		header = acme.CreateHeader(keyId, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
 		signature = acme.SignMessage(header+"."+payload, privateKey)
@@ -362,6 +357,7 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 			return "", errors.New("authentication request error")
 		}
 		nonce = response.Header.Get("Replay-Nonce")
+		time.Sleep(time.Second)
 		header = acme.CreateHeader(keyId, nonce, authorizationUrl)
 		signature = acme.SignMessage(header+".", privateKey)
 		request, err = json.Marshal(acme.JWSMessage{
