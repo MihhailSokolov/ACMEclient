@@ -270,6 +270,8 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		if err != nil {
 			return "", err
 		}
+		log.Println(response)	// TODO: Remove
+		log.Println(string(body))	// TODO: Remove
 		if response.StatusCode != 200 {
 			return "", errors.New("authorization check error")
 		}
@@ -378,8 +380,10 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		if err != nil {
 			return "", err
 		}
+		log.Println(response)	// TODO: Remove
+		log.Println(string(body))	// TODO: Remove
 		if response.StatusCode != 200 {
-			return "", errors.New("authentication confirm error")
+			return "", errors.New("authorization check failed")
 		}
 		var authorizationResult acme.AuthorizationResponse
 		err = json.Unmarshal(body, &authorizationResult)
@@ -388,7 +392,7 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		}
 		nonce = response.Header.Get("Replay-Nonce")
 		if authorizationResult.Status != "valid" {
-			return "", errors.New("authorization check failed")
+			return "", errors.New("authentication confirm error")
 		}
 	}
 	return nonce, nil
