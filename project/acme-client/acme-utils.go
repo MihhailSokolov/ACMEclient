@@ -46,10 +46,10 @@ func CreateHeader(keyId, nonce, url string) string {
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(header)
 }
 
-func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir AcmeDirectory) (string, error) {
+func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir AcmeDirectory) (string, string, error) {
 	response, err := client.Head(acmeDir.NewNonce)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	nonce := response.Header.Get("Replay-Nonce")
 	headerData, err := json.Marshal(NewAccountHeader{
@@ -64,12 +64,12 @@ func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir Acme
 		Url:   acmeDir.NewAccount,
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	header := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(headerData)
 	payloadData, err := json.Marshal(NewAccountPayload{TermsOfServiceAgreed: true})
 	if err != nil {
-		return "", nil
+		return "", "", nil
 	}
 	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(payloadData)
 	signature := SignMessage(header+"."+payload, key)
@@ -79,16 +79,16 @@ func CreateNewAcmeAccount(client http.Client, key ecdsa.PrivateKey, acmeDir Acme
 		Signature: signature,
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	response, err = client.Post(acmeDir.NewAccount, "application/jose+json", bytes.NewBuffer(request))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if response.StatusCode != 201 {
-		return "", errors.New("account creation error")
+		return "", "", errors.New("account creation error")
 	}
-	return response.Header.Get("Location"), nil
+	return response.Header.Get("Location"), response.Header.Get("Replay-Nonce"), nil
 }
 
 func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.PrivateKey, client http.Client, domains []string) ([]string, []Identifier, string, string, error) {
@@ -142,14 +142,14 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 	return orderResponse.Authorizations, orderResponse.Identifiers, orderResponse.Finalize, response.Header.Get("Replay-Nonce"), nil
 }
 
-func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key ecdsa.PrivateKey, client http.Client) (string, rsa.PrivateKey, error) {
+func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key ecdsa.PrivateKey, client http.Client) (string, rsa.PrivateKey, string, error) {
 	var dnsNames []string
 	for _, dns := range dnsIdentifiers {
 		dnsNames = append(dnsNames, dns.Value)
 	}
 	rsaPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	csr, err := x509.CreateCertificateRequest(
 		rand.Reader,
@@ -168,13 +168,13 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 		rsaPrivateKey,
 	)
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	csrMessage, err := json.Marshal(CertificateSigningRequest{
 		Csr: base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(csr),
 	})
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	header := CreateHeader(keyId, nonce, finalizeUrl)
 	payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(csrMessage)
@@ -185,11 +185,11 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 		Signature: signature,
 	})
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	response, err := client.Post(finalizeUrl, "application/jose+json", bytes.NewBuffer(request))
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -198,16 +198,16 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 		}
 	}(response.Body)
 	if response.StatusCode != 200 {
-		return "", rsa.PrivateKey{}, errors.New("csr error")
+		return "", rsa.PrivateKey{}, "", errors.New("csr error")
 	}
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	csrResponse := CertificateSigningRequestResponse{}
 	err = json.Unmarshal(body, &csrResponse)
 	if err != nil {
-		return "", rsa.PrivateKey{}, err
+		return "", rsa.PrivateKey{}, "", err
 	}
 	var certificateUrl string
 	for {
@@ -233,26 +233,26 @@ func SendCSR(keyId, nonce, finalizeUrl string, dnsIdentifiers []Identifier, key 
 			Signature: signature,
 		})
 		if err != nil {
-			return "", rsa.PrivateKey{}, err
+			return "", rsa.PrivateKey{}, "", err
 		}
 
 		response, err = client.Post(resource, "application/jose+json", bytes.NewBuffer(request))
 		if err != nil {
-			return "", rsa.PrivateKey{}, err
+			return "", rsa.PrivateKey{}, "", err
 		}
 		if response.StatusCode != 200 {
-			return "", rsa.PrivateKey{}, errors.New("csr confirmation error")
+			return "", rsa.PrivateKey{}, "", errors.New("csr confirmation error")
 		}
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			return "", rsa.PrivateKey{}, err
+			return "", rsa.PrivateKey{}, "", err
 		}
 		err = json.Unmarshal(body, &csrResponse)
 		if err != nil {
-			return "", rsa.PrivateKey{}, err
+			return "", rsa.PrivateKey{}, "", err
 		}
 	}
-	return certificateUrl, *rsaPrivateKey, nil
+	return certificateUrl, *rsaPrivateKey, response.Header.Get("Replay-Nonce"), nil
 }
 
 func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client, key ecdsa.PrivateKey, rsaKey rsa.PrivateKey) (string, error) {
