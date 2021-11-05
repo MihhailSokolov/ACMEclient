@@ -130,6 +130,7 @@ func OrderCertificates(keyId, nonce string, acmeDir AcmeDirectory, key ecdsa.Pri
 	if err != nil {
 		return nil, nil, "", "", err
 	}
+	log.Println(body) // TODO: Remove
 	if response.StatusCode != 201 {
 		return nil, nil, "", "", errors.New("order was not successful")
 	}
