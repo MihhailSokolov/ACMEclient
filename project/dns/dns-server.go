@@ -20,6 +20,8 @@ func AddDnsRecord(domain string, ip string, txt string) {
 	}
 }
 
+var recordAddress string
+
 type handler struct{}
 
 func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
@@ -30,14 +32,11 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	case dns.TypeA:
 		msg.Authoritative = true
 		domain := msg.Question[0].Name
-		data, ok := dnsLookup[domain]
-		if ok {
-			msg.Answer = append(msg.Answer, &dns.A{
-				Hdr: dns.RR_Header{Name: domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
-				A:   net.ParseIP(data.ip),
-			})
-			log.Println("DNS A request")
-		}
+		msg.Answer = append(msg.Answer, &dns.A{
+			Hdr: dns.RR_Header{Name: domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
+			A:   net.ParseIP(recordAddress),
+		})
+		log.Println("DNS A request")
 	case dns.TypeTXT:
 		msg.Authoritative = true
 		domain := msg.Question[0].Name
@@ -56,7 +55,8 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func RunDnsServer() {
+func RunDnsServer(record string) {
+	recordAddress = record
 	server := &dns.Server{Addr: "0.0.0.0:10053", Net: "udp"}
 	server.Handler = &handler{}
 	go func() {
