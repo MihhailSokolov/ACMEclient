@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func runShutdownServer() {
+func RunShutdownServer() {
 	server := gin.Default()
 	server.GET("/shutdown", func(context *gin.Context) {
 		context.JSON(200, gin.H{
@@ -16,10 +16,8 @@ func runShutdownServer() {
 		log.Println("Received shutdown signal, exiting...")
 		os.Exit(0)
 	})
-	go func() {
-		err := http.ListenAndServe(":5003", server)
-		if err != nil {
-			panic(err)
-		}
-	}()
+	err := http.ListenAndServe(":5003", server)
+	if err != nil {
+		panic(err)
+	}
 }

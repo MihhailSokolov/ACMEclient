@@ -10,10 +10,8 @@ func RunCertificateServer(certificateFile string, keyFile string) {
 	server.GET("/", func(context *gin.Context) {
 		context.Data(200, "text/plain", []byte("Hello World"))
 	})
-	go func() {
-		err := http.ListenAndServeTLS(":5001", certificateFile, keyFile, server)
-		if err != nil {
-			panic(err)
-		}
-	}()
+	err := http.ListenAndServeTLS(":5001", certificateFile, keyFile, server)
+	if err != nil {
+		panic(err)
+	}
 }

@@ -24,6 +24,7 @@ type handler struct{}
 
 func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	msg := dns.Msg{}
+	log.Println(msg)
 	msg.SetReply(r)
 	switch r.Question[0].Qtype {
 	case dns.TypeA:
@@ -35,6 +36,7 @@ func (h *handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 				Hdr: dns.RR_Header{Name: domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
 				A:   net.ParseIP(data.ip),
 			})
+			log.Println("DNS A request")
 		}
 	case dns.TypeTXT:
 		msg.Authoritative = true
