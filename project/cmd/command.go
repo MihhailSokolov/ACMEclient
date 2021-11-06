@@ -226,8 +226,8 @@ func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient htt
 		jwk, err := json.Marshal(acme.JWK{
 			Kty: "EC",
 			Crv: "P-256",
-			X:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.X.Bytes()), // key.PublicKey.X
-			Y:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.Y.Bytes()), // key.PublicKey.Y
+			X:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.PublicKey.X.Bytes()),
+			Y:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.PublicKey.Y.Bytes()),
 		})
 		if err != nil {
 			return "", err
