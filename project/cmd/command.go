@@ -47,6 +47,9 @@ func (c *HttpChallengeCommand) Execute([]string) error {
 func RunDnsChallenge(cmd DnsChallengeCommand) error {
 	log.Println("Starting DNS challenge")
 	go dnsServer.RunDnsServer()
+	for _, domain := range cmd.Domains {
+		dnsServer.AddDnsRecord(domain, "0.0.0.0", "")
+	}
 	log.Println("DNS server is running")
 	httpClient, privateKey, err := initialization()
 	log.Println("Initialization is done")
@@ -106,6 +109,10 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 
 func RunHttpChallenge(cmd HttpChallengeCommand) error {
 	log.Println("Starting HTTP challenge")
+	go dnsServer.RunDnsServer()
+	for _, domain := range cmd.Domains {
+		dnsServer.AddDnsRecord(domain, "0.0.0.0", "")
+	}
 	httpClient, privateKey, err := initialization()
 	log.Println("Initialization is done")
 	resp, err := httpClient.Get(cmd.Dir)
