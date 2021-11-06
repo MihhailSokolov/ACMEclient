@@ -78,7 +78,7 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		return err
 	}
 	log.Println("Ordered certificates")
-	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record)
+	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record, cmd.Domains)
 	if err != nil {
 		return err
 	}
@@ -187,10 +187,10 @@ func initialization() (http.Client, ecdsa.PrivateKey, error) {
 	return client, *key, nil
 }
 
-func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string) (string, error) {
+func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string) (string, error) {
 	for _, authorizationUrl := range authorizationUrls {
-		header := acme.CreateHeader(accountURL, nonce, authorizationUrl)
-		signature := acme.SignMessage(header+".", privateKey)
+		header := acme.CreateHeader(keyId, nonce, authorizationUrl)
+		signature := acme.SignMessage(header+".", key)
 		request, err := json.Marshal(acme.JWSMessage{
 			Protected: header,
 			Payload:   "",
@@ -226,8 +226,8 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		jwk, err := json.Marshal(acme.JWK{
 			Kty: "EC",
 			Crv: "P-256",
-			X:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(privateKey.PublicKey.X.Bytes()),
-			Y:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(privateKey.PublicKey.Y.Bytes()),
+			X:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.X.Bytes()), // key.PublicKey.X
+			Y:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.Y.Bytes()), // key.PublicKey.Y
 		})
 		if err != nil {
 			return "", err
@@ -236,9 +236,9 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		sha256.Write(jwk)
 		digest := sha256.Sum(nil)
 		go httpServer.RunChallengeServer(challenge.Token, challenge.Token+"."+base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest))
-		header = acme.CreateHeader(accountURL, nonce, challenge.URL)
+		header = acme.CreateHeader(keyId, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
-		signature = acme.SignMessage(header+"."+payload, privateKey)
+		signature = acme.SignMessage(header+"."+payload, key)
 		request, err = json.Marshal(acme.JWSMessage{
 			Protected: header,
 			Payload:   payload,
@@ -256,8 +256,8 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 		}
 		nonce = response.Header.Get("Replay-Nonce")
 		time.Sleep(time.Second)
-		header = acme.CreateHeader(accountURL, nonce, authorizationUrl)
-		signature = acme.SignMessage(header+".", privateKey)
+		header = acme.CreateHeader(keyId, nonce, authorizationUrl)
+		signature = acme.SignMessage(header+".", key)
 		request, err = json.Marshal(acme.JWSMessage{
 			Protected: header,
 			Payload:   "",
@@ -292,7 +292,7 @@ func authorizeWithHttp(accountURL, nonce string, privateKey ecdsa.PrivateKey, ht
 	return nonce, nil
 }
 
-func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string, dnsIdentifiers []acme.Identifier, record string) (string, error) {
+func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string, dnsIdentifiers []acme.Identifier, record string, domains []string) (string, error) {
 	for i, authorizationUrl := range authorizationUrls {
 		header := acme.CreateHeader(keyId, nonce, authorizationUrl)
 		signature := acme.SignMessage(header+".", privateKey)
@@ -346,6 +346,12 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		digest = sha256.Sum(nil)
 		encodedDigest = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest)
 		dnsServer.AddDnsRecord("_acme-challenge."+dnsIdentifiers[i].Value+".", record, encodedDigest)
+		for _, domain := range domains {
+			dnsServer.AddDnsRecord("_acme-challenge."+domain+".", record, encodedDigest)
+		}
+		for _, domain := range domains {
+			dnsServer.AddDnsRecord(domain, record, encodedDigest)
+		}
 		header = acme.CreateHeader(keyId, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
 		signature = acme.SignMessage(header+"."+payload, privateKey)
