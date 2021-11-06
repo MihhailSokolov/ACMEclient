@@ -59,10 +59,8 @@ func RunDnsServer(record string) {
 	recordAddress = record
 	server := &dns.Server{Addr: "0.0.0.0:10053", Net: "udp"}
 	server.Handler = &handler{}
-	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatalf("Error starting DNS server: %s\n", err.Error())
-		}
-		log.Println("Started a DNS server")
-	}()
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Error starting DNS server: %s\n", err.Error())
+	}
+	log.Println("Started a DNS server")
 }
