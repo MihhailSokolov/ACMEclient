@@ -76,7 +76,7 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		return err
 	}
 	log.Println("Ordered certificates")
-	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, cmd.Domains, cmd.Record)
+	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record)
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient htt
 	return nonce, nil
 }
 
-func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls, domains []string, record string) (string, error) {
+func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string, dnsIdentifiers []acme.Identifier, record string) (string, error) {
 	for i, authorizationUrl := range authorizationUrls {
 		header := acme.CreateHeader(keyId, nonce, authorizationUrl)
 		signature := acme.SignMessage(header+".", privateKey)
@@ -356,7 +356,7 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		sha256.Write([]byte(challenge.Token + "." + encodedDigest))
 		digest = sha256.Sum(nil)
 		encodedDigest = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest)
-		domain := domains[i]
+		domain := dnsIdentifiers[i].Value
 		if strings.HasPrefix(domain, "*.") {
 			domain = strings.Replace(domain, "*.", "", 1)
 		}
