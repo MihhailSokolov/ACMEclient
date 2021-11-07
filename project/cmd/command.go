@@ -224,8 +224,8 @@ func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient htt
 		}
 		nonce = response.Header.Get("Replay-Nonce")
 		jwk, err := json.Marshal(acme.JWK{
-			Kty: "EC",
 			Crv: "P-256",
+			Kty: "EC",
 			X:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.PublicKey.X.Bytes()),
 			Y:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(key.PublicKey.Y.Bytes()),
 		})
@@ -329,8 +329,8 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		}
 		nonce = response.Header.Get("Replay-Nonce")
 		jwk, err := json.Marshal(acme.JWK{
-			Kty: "EC",
 			Crv: "P-256",
+			Kty: "EC",
 			X:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(privateKey.PublicKey.X.Bytes()),
 			Y:   base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(privateKey.PublicKey.Y.Bytes()),
 		})
