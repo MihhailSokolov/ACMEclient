@@ -341,12 +341,6 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		digest = sha256.Sum(nil)
 		encodedDigest = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest)
 		dnsServer.AddDnsRecord("_acme-challenge."+dnsIdentifiers[i].Value+".", record, encodedDigest)
-		//for _, domain := range domains {
-		//	dnsServer.AddDnsRecord("_acme-challenge."+domain+".", record, encodedDigest)
-		//}
-		//for _, domain := range domains {
-		//	dnsServer.AddDnsRecord(domain, record, encodedDigest)
-		//}
 		header = acme.CreateHeader(keyId, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
 		signature = acme.SignMessage(header+"."+payload, privateKey)
