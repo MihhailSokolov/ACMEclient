@@ -1,8 +1,8 @@
 package acme_client
 
 type JWK struct {
-	Kty string `json:"kty"`
 	Crv string `json:"crv"`
+	Kty string `json:"kty"`
 	X   string `json:"x"`
 	Y   string `json:"y"`
 }

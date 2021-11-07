@@ -274,7 +274,6 @@ func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient htt
 		if err != nil {
 			return "", err
 		}
-		log.Println(response)	// TODO: Remove
 		log.Println(string(body))	// TODO: Remove
 		if response.StatusCode != 200 {
 			return "", errors.New("authorization check error")
