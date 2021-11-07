@@ -99,8 +99,15 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 	}
 	go https.RunCertificateServer("server.cert", "server.key")
 	log.Println("Started HTTPS server")
-	go httpServer.RunShutdownServer()
+	shutdownChannel := make(chan bool)
+	go httpServer.RunShutdownServer(shutdownChannel)
 	log.Println("Started shutdown server")
+	for {
+		shutdown := <-shutdownChannel
+		if shutdown {
+			break
+		}
+	}
 	return nil
 }
 
@@ -158,8 +165,15 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 	}
 	go https.RunCertificateServer("server.cert", "server.key")
 	log.Println("Started HTTPS server")
-	go httpServer.RunShutdownServer()
+	shutdownChannel := make(chan bool)
+	go httpServer.RunShutdownServer(shutdownChannel)
 	log.Println("Started shutdown server")
+	for {
+		shutdown := <-shutdownChannel
+		if shutdown {
+			break
+		}
+	}
 	return nil
 }
 
