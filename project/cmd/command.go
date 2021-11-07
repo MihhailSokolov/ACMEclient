@@ -47,9 +47,6 @@ func (c *HttpChallengeCommand) Execute([]string) error {
 func RunDnsChallenge(cmd DnsChallengeCommand) error {
 	log.Println("Starting DNS challenge")
 	go dnsServer.RunDnsServer(cmd.Record)
-	for _, domain := range cmd.Domains {
-		dnsServer.AddDnsRecord(domain, cmd.Record, "")
-	}
 	log.Println("DNS server is running")
 	httpClient, privateKey, err := initialization()
 	log.Println("Initialization is done")
@@ -78,7 +75,7 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		return err
 	}
 	log.Println("Ordered certificates")
-	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record, cmd.Domains)
+	nonce, err = authorizeWithDns(keyId, nonce, privateKey, httpClient, authorizationUrls, dnsIdentifiers, cmd.Record)
 	if err != nil {
 		return err
 	}
@@ -274,7 +271,6 @@ func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient htt
 		if err != nil {
 			return "", err
 		}
-		log.Println(string(body))	// TODO: Remove
 		if response.StatusCode != 200 {
 			return "", errors.New("authorization check error")
 		}
@@ -291,7 +287,7 @@ func authorizeWithHttp(keyId, nonce string, key ecdsa.PrivateKey, httpClient htt
 	return nonce, nil
 }
 
-func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string, dnsIdentifiers []acme.Identifier, record string, domains []string) (string, error) {
+func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClient http.Client, authorizationUrls []string, dnsIdentifiers []acme.Identifier, record string) (string, error) {
 	for i, authorizationUrl := range authorizationUrls {
 		header := acme.CreateHeader(keyId, nonce, authorizationUrl)
 		signature := acme.SignMessage(header+".", privateKey)
@@ -345,12 +341,12 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		digest = sha256.Sum(nil)
 		encodedDigest = base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digest)
 		dnsServer.AddDnsRecord("_acme-challenge."+dnsIdentifiers[i].Value+".", record, encodedDigest)
-		for _, domain := range domains {
-			dnsServer.AddDnsRecord("_acme-challenge."+domain+".", record, encodedDigest)
-		}
-		for _, domain := range domains {
-			dnsServer.AddDnsRecord(domain, record, encodedDigest)
-		}
+		//for _, domain := range domains {
+		//	dnsServer.AddDnsRecord("_acme-challenge."+domain+".", record, encodedDigest)
+		//}
+		//for _, domain := range domains {
+		//	dnsServer.AddDnsRecord(domain, record, encodedDigest)
+		//}
 		header = acme.CreateHeader(keyId, nonce, challenge.URL)
 		payload := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte("{}"))
 		signature = acme.SignMessage(header+"."+payload, privateKey)
@@ -389,8 +385,6 @@ func authorizeWithDns(keyId, nonce string, privateKey ecdsa.PrivateKey, httpClie
 		if err != nil {
 			return "", err
 		}
-		log.Println(response)	// TODO: Remove
-		log.Println(string(body))	// TODO: Remove
 		if response.StatusCode != 200 {
 			return "", errors.New("authorization check failed")
 		}
