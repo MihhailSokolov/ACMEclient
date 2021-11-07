@@ -1,17 +1,22 @@
 package http_server
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 )
 
-func RunChallengeServer(token string, data string) {
-	server := gin.Default()
-	server.GET("/.well-known/acme-challenge/"+token, func(context *gin.Context) {
-		context.Data(200, "application/octet-stream", []byte(data))
+func AddEndpoint(token, data string) {
+	http.HandleFunc("/.well-known/acme-challenge/"+token, func(response http.ResponseWriter, _ *http.Request) {
+		response.Header().Set("Content-Type", "application/octet-stream")
+		_, err := response.Write([]byte(data))
+		if err != nil {
+			panic(err)
+		}
 	})
-	err := http.ListenAndServe("0.0.0.0:5002", server)
+}
+
+func RunChallengeServer() {
+	err := http.ListenAndServe("0.0.0.0:5002", nil)
 	if err != nil {
 		panic(err)
 	}
