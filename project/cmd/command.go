@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	acme "project/acme-client"
 	dnsServer "project/dns"
 	httpServer "project/http-server"
@@ -98,7 +99,7 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		}
 		log.Println("Revoked certificate")
 	}
-	go https.RunCertificateServer("server.cert", "server.key")
+	go https.RunCertificateServer(acme.CertificateFilePath, acme.RsaPrivateKeyFilePath)
 	log.Println("Started HTTPS server")
 	shutdownChannel := make(chan bool)
 	go httpServer.RunShutdownServer(shutdownChannel)
@@ -108,6 +109,14 @@ func RunDnsChallenge(cmd DnsChallengeCommand) error {
 		if shutdown {
 			break
 		}
+	}
+	err = os.Remove(acme.CertificateFilePath)
+	if err != nil {
+		log.Println("Could not delete:", acme.CertificateFilePath)
+	}
+	err = os.Remove(acme.RsaPrivateKeyFilePath)
+	if err != nil {
+		log.Println("Could not delete:", acme.RsaPrivateKeyFilePath)
 	}
 	return nil
 }
@@ -164,7 +173,7 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 		}
 		log.Println("Revoked certificate")
 	}
-	go https.RunCertificateServer("server.cert", "server.key")
+	go https.RunCertificateServer(acme.CertificateFilePath, acme.RsaPrivateKeyFilePath)
 	log.Println("Started HTTPS server")
 	shutdownChannel := make(chan bool)
 	go httpServer.RunShutdownServer(shutdownChannel)
@@ -174,6 +183,14 @@ func RunHttpChallenge(cmd HttpChallengeCommand) error {
 		if shutdown {
 			break
 		}
+	}
+	err = os.Remove(acme.CertificateFilePath)
+	if err != nil {
+		log.Println("Could not delete:", acme.CertificateFilePath)
+	}
+	err = os.Remove(acme.RsaPrivateKeyFilePath)
+	if err != nil {
+		log.Println("Could not delete:", acme.RsaPrivateKeyFilePath)
 	}
 	return nil
 }

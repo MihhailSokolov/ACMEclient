@@ -20,6 +20,9 @@ import (
 	"time"
 )
 
+const CertificateFilePath = "domain.cert"
+const RsaPrivateKeyFilePath = "domain.key"
+
 func SignMessage(message string, privateKey ecdsa.PrivateKey) string {
 	const hashLen = 32
 	sha256 := crypto.SHA256.New()
@@ -280,11 +283,11 @@ func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client
 	if err != nil {
 		return "", err
 	}
-	err = ioutil.WriteFile("server.cert", body, os.FileMode(0644))
+	err = ioutil.WriteFile(CertificateFilePath, body, os.FileMode(0644))
 	if err != nil {
 		return "", err
 	}
-	err = ioutil.WriteFile("server.key", pem.EncodeToMemory(
+	err = ioutil.WriteFile(RsaPrivateKeyFilePath, pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
 			Bytes: x509.MarshalPKCS1PrivateKey(&rsaKey),
@@ -299,7 +302,7 @@ func DownloadCertificate(certificateUrl, keyId, nonce string, client http.Client
 
 func RevokeCertificate(keyId, nonce string, client http.Client, acmeDir AcmeDirectory, key ecdsa.PrivateKey) error {
 	header := CreateHeader(keyId, nonce, acmeDir.RevokeCert)
-	certificate, err := ioutil.ReadFile("server.cert")
+	certificate, err := ioutil.ReadFile(CertificateFilePath)
 	if err != nil {
 		return err
 	}
